@@ -1,0 +1,44 @@
+/**
+ * SERENIA ACCOUNTING — styles/index.css
+ * ========================================
+ * Global styles: Tailwind directives, font imports,
+ * scrollbar styling, and base resets.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-surface-200 dark:border-surface-dark-border;
+  }
+  body {
+    @apply bg-surface-50 dark:bg-surface-dark text-surface-dark dark:text-surface-100 font-sans antialiased;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-200 dark:bg-surface-dark-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-300;
+  }
+  /* Visible keyboard focus for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-400 ring-offset-1;
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
