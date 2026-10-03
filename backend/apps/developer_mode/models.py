@@ -126,7 +126,7 @@ class Theme(models.Model):
     border_radius_md = models.CharField(max_length=10, default='10px')
     border_radius_lg = models.CharField(max_length=10, default='16px')
 
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_themes')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
