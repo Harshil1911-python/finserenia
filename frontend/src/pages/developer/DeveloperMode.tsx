@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tab } from '@headlessui/react';
 import toast from 'react-hot-toast';
 import {
-  SwatchIcon, PaintBrushIcon, ToggleLeftIcon, EnvelopeIcon,
+  SwatchIcon, PaintBrushIcon, AdjustmentsHorizontalIcon, EnvelopeIcon,
   ShieldCheckIcon, DocumentTextIcon, GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 import api, { normalizeError } from '../../services/api';
@@ -22,7 +22,7 @@ import type { SystemSetting, Theme } from '../../types';
 const TABS = [
   { key: 'branding', label: 'Branding', icon: SwatchIcon },
   { key: 'theme', label: 'Theme Builder', icon: PaintBrushIcon },
-  { key: 'features', label: 'Feature Toggles', icon: ToggleLeftIcon },
+  { key: 'features', label: 'Feature Toggles', icon: AdjustmentsHorizontalIcon },
   { key: 'smtp', label: 'Email / SMTP', icon: EnvelopeIcon },
   { key: 'security', label: 'Security', icon: ShieldCheckIcon },
   { key: 'content', label: 'Content & Pages', icon: DocumentTextIcon },
