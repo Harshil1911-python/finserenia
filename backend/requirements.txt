@@ -1,0 +1,67 @@
+# =============================================================
+# SERENIA ACCOUNTING — Python Requirements
+# Trimmed to packages actually imported by the codebase, and to
+# pure-Python / manylinux-wheel packages so this installs cleanly
+# on Render's native Python runtime (no apt-get / system libs available).
+# =============================================================
+
+# ── Django Core ───────────────────────────────────────────────
+Django==4.2.11
+djangorestframework==3.15.1
+django-cors-headers==4.3.1
+djangorestframework-simplejwt==5.3.1
+django-filter==23.5
+
+# ── Database ──────────────────────────────────────────────────
+psycopg2-binary==2.9.9
+dj-database-url==2.1.0
+
+# ── Cache & Sessions ──────────────────────────────────────────
+redis==5.0.3
+django-redis==5.4.0
+hiredis==2.3.2
+
+# ── Celery Task Queue ─────────────────────────────────────────
+celery==5.3.6
+django-celery-beat==2.6.0
+django-celery-results==2.5.1
+kombu==5.3.4
+
+# ── Authentication & Security ─────────────────────────────────
+PyJWT==2.8.0
+cryptography==42.0.5
+django-axes==6.4.0
+
+# ── File & Report Generation (pure-Python — no system deps) ────
+reportlab==4.1.0
+openpyxl==3.1.2
+Pillow==10.2.0
+
+# ── Utilities ─────────────────────────────────────────────────
+python-dateutil==2.9.0.post0
+
+# ── API Documentation ────────────────────────────────────────
+drf-spectacular==0.27.2
+
+# ── Storage (S3-compatible media, optional via USE_S3) ─────────
+boto3==1.34.69
+django-storages==1.14.2
+
+# ── Server ────────────────────────────────────────────────────
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# ── Configuration ─────────────────────────────────────────────
+python-decouple==3.8
+django-phonenumber-field==7.3.0
+phonenumbers==8.13.32
+
+# ── Monitoring (optional — set SENTRY_DSN to enable) ───────────
+sentry-sdk==1.44.0
+
+# ── Development / Testing (safe in prod — only loaded if imported) ─
+django-debug-toolbar==4.3.0
+factory-boy==3.3.0
+Faker==24.2.0
+pytest-django==4.8.0
+pytest==8.1.1

@@ -1,0 +1,228 @@
+# =============================================================
+# SERENIA ACCOUNTING — render.yaml
+# Render Blueprint: deploys DB, Redis, API, Celery, Frontend
+#
+# Deploy: Render Dashboard → New → Blueprint → connect this repo.
+# After first deploy, set the values flagged "sync: false" below
+# in each service's Environment tab (Render does not let Blueprints
+# set secret values that must be SHARED across services directly).
+# =============================================================
+
+envVarGroups:
+  - name: serenia-shared
+    envVars:
+      # SECRET_KEY must be IDENTICAL across api/celery/beat for JWT
+      # signing + session/cache key consistency. Render generates it
+      # once here and all three services reference this group.
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+
+databases:
+  - name: serenia-db
+    databaseName: serenia_db
+    user: serenia_user
+    plan: starter
+
+services:
+  # ── Redis ────────────────────────────────────────────────────
+  - type: redis
+    name: serenia-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []   # internal access only
+
+  # ── Django API ───────────────────────────────────────────────
+  - type: web
+    name: serenia-api
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    # preDeployCommand runs once per deploy, AFTER build, BEFORE the
+    # new instance receives traffic. This is where migrations + seed
+    # data belong on Render (NOT in startCommand, which runs per-instance).
+    preDeployCommand: python manage.py migrate --noinput && python manage.py seed_initial_data
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+    healthCheckPath: /api/v1/health/
+    envVarGroups:
+      - serenia-shared
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: serenia-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: DEBUG
+        value: "False"
+      # Render injects RENDER_EXTERNAL_HOSTNAME automatically; .onrender.com
+      # wildcard covers preview URLs too. Add your custom domain(s) here
+      # once configured, comma-separated.
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://serenia-frontend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://serenia-frontend.onrender.com,https://serenia-api.onrender.com
+      # ── Required secrets — set these manually in the Render dashboard
+      # after first deploy (Environment tab for serenia-api):
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+      - key: EMAIL_HOST
+        value: smtp.sendgrid.net
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: noreply@serenia.app
+      # ── Media storage (Render web services have ephemeral disks —
+      # set USE_S3=True and fill AWS_* for durable uploads in production)
+      - key: USE_S3
+        value: "False"
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_STORAGE_BUCKET_NAME
+        value: serenia-media
+      - key: AWS_S3_REGION_NAME
+        value: ap-south-1
+
+  # ── Celery Worker ────────────────────────────────────────────
+  - type: worker
+    name: serenia-celery
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A config worker -l info -Q default,reports,payroll,notifications
+    envVarGroups:
+      - serenia-shared
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: serenia-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://serenia-frontend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://serenia-frontend.onrender.com,https://serenia-api.onrender.com
+      - key: EMAIL_HOST
+        value: smtp.sendgrid.net
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: noreply@serenia.app
+      - key: USE_S3
+        value: "False"
+
+  # ── Celery Beat ──────────────────────────────────────────────
+  - type: worker
+    name: serenia-beat
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    envVarGroups:
+      - serenia-shared
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: serenia-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: serenia-redis
+          type: redis
+          property: connectionString
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://serenia-frontend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://serenia-frontend.onrender.com,https://serenia-api.onrender.com
+      - key: USE_S3
+        value: "False"
+
+  # ── React Frontend ───────────────────────────────────────────
+  - type: web
+    name: serenia-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://serenia-api.onrender.com/api/v1
